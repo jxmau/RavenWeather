@@ -1,0 +1,13 @@
+CREATE TABLE air (
+    id SERIAL PRIMARY KEY,
+    dt BIGINT NOT NULL,
+    aqi SMALLINT NOT NULL,
+    co REAL NOT NULL,
+    "no" REAL NOT NULL,
+    no2 REAL NOT NULL,
+    o3 REAL NOT NULL,
+    so2 REAL NOT NULL,
+    pm2_5 REAL NOT NULL,
+    pm10 REAL NOT NULL,
+    nh3 REAL NOT NULL
+)
