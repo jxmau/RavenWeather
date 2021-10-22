@@ -7,9 +7,9 @@ use raven_weather::save_weather;
 use crate::config::Config;
 use std::{thread, time};
 use crate::request::current_weather::CurrentWeather;
-
+use std::sync::Arc;
 pub struct CurrentWeatherActualizer{
-    pub config : Config,
+    pub config : Arc<Config>,
     pub conn: PgConnection,
 
 }

@@ -3,9 +3,9 @@ use std::{thread, time};
 use crate::request::air_pollution::AirPollution;
 use diesel::pg::PgConnection;
 use raven_weather::save_air_pollution;
-
+use std::sync::Arc;
 pub struct AirPollutionActualizer {
-    pub config : Config,
+    pub config : Arc<Config>,
     pub conn : PgConnection,
 }
 

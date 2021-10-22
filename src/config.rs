@@ -1,5 +1,8 @@
 use std::env;
 use dotenv::dotenv;
+
+
+#[derive(Clone)]
 pub struct Config {
     pub key : String,
     pub lat : String,
@@ -7,13 +10,10 @@ pub struct Config {
 }
 
 
-// TODO Change to it fetches directly on the dot file.
 impl Config {
 
     pub fn fetch() -> Config {
-
-
-        // Chane the unwrap thingy to someting more safe.
+        // Change the unwrap thingy to someting more safe.
         dotenv().ok();
         Config {
             key : env::var("KEY").unwrap(),
@@ -21,5 +21,4 @@ impl Config {
             lon : env::var("LONGITUDE").unwrap(),
         }
     }
-
 }

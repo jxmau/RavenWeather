@@ -12,30 +12,27 @@ use request::air_pollution_actualizer::AirPollutionActualizer;
 use request::current_weather_actualizer::CurrentWeatherActualizer;
 use serde_json::json;
 use warp::Filter;
-
+use std::sync::Arc;
 
 
 
 #[tokio::main]
 async fn main() {
 
-    
+    let config : Arc<Config> = Arc::new(Config::fetch());
+    let config_clone = config.clone();
+
     let _thread_1 = std::thread::spawn(move || {
-        let air_pollution_actualizer = AirPollutionActualizer {config: Config::fetch(), conn : establish_connection()};
+        let air_pollution_actualizer = AirPollutionActualizer {config:  config_clone, conn : establish_connection()};
         air_pollution_actualizer.run();
     });
 
     let _thread_2 = std::thread::spawn(move || {
-        let current_weather_actualizer = CurrentWeatherActualizer {config: Config::fetch(), conn: establish_connection()};
+        let current_weather_actualizer = CurrentWeatherActualizer {config, conn: establish_connection()};
         current_weather_actualizer.run();
     });
 
-    
-    
 
-    
-
-    
 
     warp::serve(get_routes()).run(([127, 0, 0, 1], 8666)).await;
 }
