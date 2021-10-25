@@ -10,8 +10,10 @@ use raven_weather::models::{Air, Weather};
 
 use request::air_pollution_actualizer::AirPollutionActualizer;
 use request::current_weather_actualizer::CurrentWeatherActualizer;
-use serde_json::json;
-use warp::Filter;
+
+use serde::{Serialize, Deserialize};
+use warp::reply::json;
+use warp::{Filter, Rejection, Reply};
 use std::sync::Arc;
 
 
@@ -21,6 +23,7 @@ async fn main() {
 
     let config : Arc<Config> = Arc::new(Config::fetch());
     let config_clone = config.clone();
+
 
     let _thread_1 = std::thread::spawn(move || {
         let air_pollution_actualizer = AirPollutionActualizer {config:  config_clone, conn : establish_connection()};
@@ -40,15 +43,35 @@ async fn main() {
 
 fn get_routes() -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
 
-    let air = warp::path!("air").map(|| get_last_air_pollution().to_json());
-    let weather = warp::path!("weather").map(|| get_current_weather().to_json());
-    let current_condition = warp::path!("current-condition").map(|| get_current());
+    let air = warp::path("air")
+        .and(security_check())
+        .map(|| json(&get_last_air_pollution()).into_response());
 
+    let weather = warp::path!("weather")
+        .and(security_check())
+        .map(|| json(&get_current_weather()).into_response());
 
-    let routes = warp::get().and(air.or(weather.or(current_condition)));
-    routes
+    let current_condition = warp::path!("current-condition")
+        .and(security_check())
+        .map(|| json(&get_current()).into_response());
 
+    let routes = warp::get().and(
+        air
+        .or(weather)
+        .or(current_condition)
+    );
+    routes   
 }
+
+
+fn security_check() -> impl Filter<Extract = (), Error = Rejection> + Copy {
+
+    let key = std::env::var("SECURITY_KEY").expect("SECURITY_KEY is required.");
+    let key = Box::new(key);
+    let key = Box::leak(key);
+    warp::header::exact("security-key", key)
+}
+
 
 
 
@@ -80,37 +103,22 @@ fn get_current_weather() -> Weather {
         .expect("Error loading Weather post.");
 
     query_result[0]
+    
+
+
 }
 
-fn get_current() -> String {
-    // ISSUE -> Logically, it returns two String, and not two JSON Object.
+
+#[derive(Copy, Clone, Serialize, Deserialize)]
+pub struct CurrentCondition {
+    current_air_pollution: Air,
+    current_weather_condition: Weather,
+}
+
+fn get_current() -> CurrentCondition {
 
     let air : Air = get_last_air_pollution();
     let weather : Weather = get_current_weather();
-    json!({
-        "current_weather": {
-            "dt": weather.dt,
-            "wind_speed" : &weather.wind_speed,
-            "wind_direction" : &weather.wind_direction,
-            "temp" : &weather.temp,
-            "feels_like" : &weather.feels_like,
-            "temp_min" : &weather.temp_min,
-            "temp_max" : &weather.temp_max,
-            "pressure" : &weather.pressure,
-            "humidity" : &weather.humidity,
-            "weather_id" : &weather.weather_id,
-        },
-        "current_air_pollution": {
-            "dt" :  &air.dt,
-            "quality" : &air.aqi,
-            "co" :  &air.co ,
-            "no" :  &air.no,
-            "no2" :  &air.no2,
-            "o3" :  &air.o3,
-            "so2" :  &air.so2,
-            "pm2_5" :  &air.pm2_5,
-            "pm10" :  &air.pm10,
-            "nh3" :  &air.nh3,
-        },
-    }).to_string()
+    let current = CurrentCondition {current_air_pollution : air, current_weather_condition: weather};
+    current
 }

@@ -1,9 +1,10 @@
 use serde_json::json;
+use serde::{Serialize, Deserialize};
 
 use super::schema::air;
 use super::schema::weather;
 
-#[derive(Queryable, Copy, Clone)]
+#[derive(Queryable, Copy, Clone, Serialize, Deserialize)]
 pub struct Air {
     pub id : i32, 
     pub dt : i64,
@@ -51,7 +52,7 @@ pub struct NewAir<'a> {
     pub nh3 : &'a f32,
 }
 
-#[derive(Queryable, Copy, Clone)]
+#[derive(Queryable, Copy, Clone, Serialize, Deserialize)]
 pub struct Weather {
     pub id : i32,
     pub dt : i64,
