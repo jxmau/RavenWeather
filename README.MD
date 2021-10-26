@@ -30,7 +30,7 @@ RavenWeather is a DB Actualizer and RESTful APP using OpenWeatherMap APIs made i
 * Data : <br>
 [X] - Current Weather <br>
 [X] - Air Pollution <br>
-[_] - Forecast <br>
+[X] - Forecast <br>
 * Security : <br>
 [_] - Implement a Key to accept or reject REST requests.
 * Local Implementation : <br>

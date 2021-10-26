@@ -26,10 +26,12 @@ impl CurrentWeatherActualizer {
             let response = reqwest::blocking::get(&url)?
                     .text()?;
 
-            let weather : CurrentWeather = match serde_json::from_str(&response) {
+            let mut weather : CurrentWeather = match serde_json::from_str(&response) {
                 Ok(s) => s,
                 Err(_) => CurrentWeather::new(),
             };
+
+            weather.main.convert();
 
             save_weather(&self.conn, &weather.dt, &weather.wind.speed, &weather.wind.deg, &weather.main.temp, &weather.main.feels_like, &weather.main.temp_min, &weather.main.temp_max, &weather.main.pressure, &weather.main.humidity, &weather.weather[0].id);
             
