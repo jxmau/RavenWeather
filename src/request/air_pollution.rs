@@ -41,4 +41,3 @@ pub struct Components {
     pub nh3 : f32,
 }
 
-

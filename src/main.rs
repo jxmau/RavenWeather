@@ -3,18 +3,24 @@ mod request;
 
 
 
+use axum::Json;
+
+use axum::{Router, routing::get};
 use config::Config;
 use diesel::{QueryDsl, RunQueryDsl};
+
+use http::header::{self, HeaderMap, HeaderValue};
 use raven_weather::establish_connection;
 use raven_weather::models::{Air, Weather};
 
 use request::air_pollution_actualizer::AirPollutionActualizer;
 use request::current_weather_actualizer::CurrentWeatherActualizer;
 
-use serde::{Serialize, Deserialize};
-use warp::reply::json;
-use warp::{Filter, Rejection, Reply};
+use serde_json::{Value, json};
+
 use std::sync::Arc;
+
+
 
 
 
@@ -36,42 +42,50 @@ async fn main() {
     });
 
 
+    let air = Router::new()
+        .route("/air", get(|| async {(cors_headers(), get_last_air_pollution().to_json())})
+            .options(|| async { cors_headers() }))
+        .route("/weather", get(|| async {(cors_headers(), get_current_weather().to_json())})
+            .options(|| async { cors_headers() }))
+        .route("/current", get( || async {(cors_headers(), get_current() )}) 
+            .options(|| async {cors_headers() }));
+        
+        
 
-    warp::serve(get_routes()).run(([127, 0, 0, 1], 8666)).await;
+
+    axum::Server::bind(&"0.0.0.0:8666".parse().unwrap())
+        .serve(air.into_make_service())
+        .await
+        .unwrap();
+
+
+}
+
+fn cors_headers() -> HeaderMap {
+
+    // Change this logic to gain a &'static str
+    let origin = match std::env::var("ACCESS_CONTROL_ALLOW_ORIGIN") {
+        Ok(s) => s,
+        Err(_) => "".to_string(),
+    };
+    let origin = Box::new(origin);
+    let origin = Box::leak(origin);
+
+    let mut headers = HeaderMap::new();
+    headers.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static(origin),);
+    headers.insert(header::ACCESS_CONTROL_ALLOW_METHODS, HeaderValue::from_static("GET"),);
+    headers.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, HeaderValue::from_static("*"),);
+    headers
 }
 
 
-fn get_routes() -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
-
-    let air = warp::path("air")
-        .and(security_check())
-        .map(|| json(&get_last_air_pollution()).into_response());
-
-    let weather = warp::path!("weather")
-        .and(security_check())
-        .map(|| json(&get_current_weather()).into_response());
-
-    let current_condition = warp::path!("current-condition")
-        .and(security_check())
-        .map(|| json(&get_current()).into_response());
-
-    let routes = warp::get().and(
-        air
-        .or(weather)
-        .or(current_condition)
-    );
-    routes   
-}
-
-
-fn security_check() -> impl Filter<Extract = (), Error = Rejection> + Copy {
-
-    let key = std::env::var("SECURITY_KEY").expect("SECURITY_KEY is required.");
-    let key = Box::new(key);
-    let key = Box::leak(key);
-    warp::header::exact("security-key", key)
-}
-
+// #[allow(dead_code)]
+// fn security_check() -> impl Filter<Extract = (), Error = Rejection> + Copy {
+//     let key = std::env::var("SECURITY_KEY").expect("SECURITY_KEY is required.");
+//     let key = Box::new(key);
+//     let key = Box::leak(key);
+//     warp::header::exact("security-key", key)
+// }
 
 
 
@@ -86,8 +100,12 @@ fn get_last_air_pollution() -> Air {
         .load::<Air>(&conn)
         .expect("Error loading posts");
     
-    query_result[0]
+    let mut r = query_result[0];
+    r.self_truncate();
+    r
 }
+
+
 
 fn get_current_weather() -> Weather {
     use raven_weather::schema::weather::dsl::*;
@@ -102,23 +120,39 @@ fn get_current_weather() -> Weather {
         .load::<Weather>(&conn)
         .expect("Error loading Weather post.");
 
-    query_result[0]
-    
-
-
+    let mut r = query_result[0];
+    r.self_truncate();
+    r
 }
 
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
-pub struct CurrentCondition {
-    current_air_pollution: Air,
-    current_weather_condition: Weather,
-}
-
-fn get_current() -> CurrentCondition {
-
-    let air : Air = get_last_air_pollution();
-    let weather : Weather = get_current_weather();
-    let current = CurrentCondition {current_air_pollution : air, current_weather_condition: weather};
-    current
-}
+ fn get_current() -> Json<Value> {
+     let air : Air = get_last_air_pollution();
+     let weather : Weather = get_current_weather();
+     Json(json!({
+         "weather" : {
+            "dt": weather.dt,
+            "wind_speed" : weather.wind_speed,
+            "wind_direction" : weather.wind_direction,
+            "temp" : weather.temp,
+            "feels_like" : weather.feels_like,
+            "temp_min" : weather.temp_min,
+            "temp_max" : weather.temp_max,
+            "pressure" : weather.pressure,
+            "humidity" : weather.humidity,
+            "weather_id" : weather.weather_id,
+        },
+         "air": {
+            "dt" :  air.dt,
+            "aqi" : air.aqi,
+            "co" :  air.co ,
+            "no" :  air.no,
+            "no2" :  air.no2,
+            "o3" :  air.o3,
+            "so2" :  air.so2,
+            "pm2_5" :  air.pm2_5,
+            "pm10" :  air.pm10,
+            "nh3" :  air.nh3,
+        }
+     }))
+ }

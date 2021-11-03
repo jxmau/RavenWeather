@@ -47,3 +47,14 @@ pub fn save_weather<'a>(conn : &PgConnection, dt : &'a i64, wind_speed: &'a f32,
         .get_result(conn)
         .expect("Error")
 }
+
+
+pub trait Trunk{
+    fn trunk(&mut self) -> Self;
+}
+
+impl Trunk for f32{
+    fn trunk(&mut self) -> Self{
+        (*self * 100.0).round() 
+    }
+}

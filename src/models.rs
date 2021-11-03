@@ -1,10 +1,15 @@
+use axum::Json;
+use serde_json::Value;
 use serde_json::json;
 use serde::{Serialize, Deserialize};
+
+use crate::Trunk;
 
 use super::schema::air;
 use super::schema::weather;
 
-#[derive(Queryable, Copy, Clone, Serialize, Deserialize)]
+
+#[derive(Queryable, Copy, Clone, Serialize, Deserialize, Debug)]
 pub struct Air {
     pub id : i32, 
     pub dt : i64,
@@ -20,8 +25,8 @@ pub struct Air {
 }
 
 impl Air {
-    pub fn to_json(&self) -> String {
-        json!({
+    pub fn to_json(&self) -> Json<Value> {
+        Json(json!({
             "dt" :  &self.dt,
             "quality" : &self.aqi,
             "co" :  &self.co ,
@@ -32,7 +37,18 @@ impl Air {
             "pm2_5" :  &self.pm2_5,
             "pm10" :  &self.pm10,
             "nh3" :  &self.nh3,
-        }).to_string()
+        }))
+    }
+
+    pub fn self_truncate(&mut self) {
+        self.co = self.co.trunk();
+        self.no = self.no.trunk();
+        self.no2 = self.no2.trunk();
+        self.o3 = self.o3.trunk();
+        self.so2 = self.so2.trunk();
+        self.pm2_5 = self.pm2_5.trunk();
+        self.pm10 = self.pm10.trunk();
+        self.nh3 = self.nh3.trunk();
     }
 }
 
@@ -68,8 +84,8 @@ pub struct Weather {
 }
 
 impl Weather {
-    pub fn to_json(&self) -> String {
-        json!({
+    pub fn to_json(&self) -> Json<Value> {
+        Json(json!({
             "dt": &self.dt,
             "wind_speed" : &self.wind_speed,
             "wind_direction" : &self.wind_direction,
@@ -80,7 +96,15 @@ impl Weather {
             "pressure" : &self.pressure,
             "humidity" : &self.humidity,
             "weather_id" : &self.weather_id,
-        }).to_string()
+        }))
+    }
+
+    pub fn self_truncate(&mut self) {
+        self.wind_speed = self.wind_speed.trunk();
+        self.temp = self.temp.trunk();
+        self.feels_like = self.feels_like.trunk();
+        self.temp_min = self.temp_min.trunk();
+        self.temp_max = self.temp_max.trunk();
     }
 }
 

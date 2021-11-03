@@ -15,7 +15,7 @@ RavenWeather is a DB Actualizer and RESTful APP using OpenWeatherMap APIs made i
     * Diesel 
     * dotenv
     * Reqwest
-    * Warp
+    * Axum
     * Serde & serde_json
 
 ### Env. Variables
@@ -24,15 +24,24 @@ RavenWeather is a DB Actualizer and RESTful APP using OpenWeatherMap APIs made i
 * KEY - OpenWeatherMap appKey
 * LATITUDE 
 * LONGITUDE
+* CORS Origin for Access-Control-Allow-Origin
+
+### Warning
+
+Data sent as floating point needs to be divided by 100.0 at reception.
 
 ## Road Map
 
 * Data : <br>
 [X] - Current Weather <br>
 [X] - Air Pollution <br>
-[X] - Forecast <br>
+[_] - Forecast <br>
+[_] - Handle Rejection so it can send its error in case or 401 or 429 error codes.
+* Database : <br>
+[_] - Modify floating types in table to integer.
 * Security : <br>
-[_] - Implement a Key to accept or reject REST requests.
+[X] - Implement CORS Headers logic.
+[/] - Implement a Key to accept or reject REST requests. (To be resettled following migration to axum.)
 * Local Implementation : <br>
 [_] - Implement Feature to connect to a local weather station.
 
